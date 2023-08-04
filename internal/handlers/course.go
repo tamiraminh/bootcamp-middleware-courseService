@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/evermos/boilerplate-go/internal/domain/course"
 	"github.com/evermos/boilerplate-go/shared"
@@ -31,9 +32,9 @@ func (h *CourseHandler) Router(r chi.Router) {
 
 		r.Group(func(r chi.Router) {
 			r.Use(h.AuthMiddleware.ValidateJWT)
-			r.Use(h.AuthMiddleware.RoleCheck)
+			r.Use(h.AuthMiddleware.RoleTeacherCheck)
 			r.Post("/", h.CreateCourse)
-			r.Get("/", h.ReadCourse)
+			r.Get("/", h.ReadCourseByUserId)
 			// r.Put("/foo/{id}", h.UpdateFoo)
 		})
 
@@ -69,8 +70,23 @@ func (h *CourseHandler) CreateCourse(w http.ResponseWriter, r *http.Request) {
 	response.WithJSON(w, http.StatusCreated, course)
 }
 
-func (h *CourseHandler) ReadCourse(w http.ResponseWriter, r *http.Request) {
-	
+func (h *CourseHandler) ReadCourseByUserId(w http.ResponseWriter, r *http.Request) {
+	order := r.URL.Query().Get("order")
+	orderBy := r.URL.Query().Get("orderBy")
+	pageStr := r.URL.Query().Get("page")
+	pageInt, err := strconv.Atoi(pageStr)
+	if err != nil {
+		response.WithMessage(w, http.StatusBadRequest, "Must have page queryparam")
+		return	
+	}
+	limitStr := r.URL.Query().Get("limit")
+	limitInt, err := strconv.Atoi(limitStr)
+	if err != nil {
+		response.WithMessage(w, http.StatusBadRequest, "Must have limit queryparam")
+		return	
+	}
+
+
 	claims, ok := r.Context().Value(middleware.ClaimsKey("claims")).(shared.Claims)
 	if !ok {
 		response.WithMessage(w, http.StatusUnauthorized, "Unauthorized")
@@ -82,7 +98,7 @@ func (h *CourseHandler) ReadCourse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	courses, err := h.CourseService.Read(id)
+	courses, err := h.CourseService.ResolveCourseByUserId(id, order, orderBy, pageInt, limitInt)
 	if err != nil {
 		response.WithError(w, err)
 		return

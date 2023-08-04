@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/evermos/boilerplate-go/configs"
 	"github.com/evermos/boilerplate-go/infras"
 	"github.com/evermos/boilerplate-go/shared"
 	"github.com/evermos/boilerplate-go/shared/failure"
@@ -22,15 +23,17 @@ type ClaimsKey string
 
 type Authentication struct {
 	db *infras.MySQLConn
+	config *configs.Config
 }
 
 const (
 	HeaderAuthorization = "Authorization"
 )
 
-func ProvideAuthentication(db *infras.MySQLConn) *Authentication {
+func ProvideAuthentication(db *infras.MySQLConn, conf *configs.Config) *Authentication {
 	return &Authentication{
 		db: db,
+		config: conf,
 	}
 }
 
@@ -104,19 +107,24 @@ func (a *Authentication) Password(next http.Handler) http.Handler {
 
 func (a *Authentication) ValidateJWT(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		accessToken := r.Header.Get(HeaderAuthorization)
+		accessToken := r.Header.Get(HeaderAuthorization)[(len("Bearer ")):]
 
 
 		client := http.Client{}
-		req , err := http.NewRequest("GET","http://localhost:8080/v1/users/validate", nil)
+		req , err := http.NewRequest("GET",configs.Get().App.AuthServiceBaseURL + configs.Get().App.AuthServiceValidatePath, nil)
 		if err != nil {
 			response.WithMessage(w, http.StatusUnauthorized, "Unauthorized")
 			return
 		}
 
-		req.Header.Set("Authorization", accessToken)
+		req.Header.Set("Authorization", "Bearer " +  accessToken)
 
 		res , err := client.Do(req)
+		if err != nil {
+			response.WithMessage(w, http.StatusUnauthorized, "Unauthorized")
+			return
+		}
+
 		if res.StatusCode != 200 {
 			response.WithMessage(w, http.StatusUnauthorized, "Unauthorized")
 			return
@@ -137,7 +145,7 @@ func (a *Authentication) ValidateJWT(next http.Handler) http.Handler {
 }
 
 
-func (a *Authentication) RoleCheck(next http.Handler) http.Handler {
+func (a *Authentication) RoleTeacherCheck(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims, ok := r.Context().Value(ClaimsKey("claims")).(shared.Claims)
 		if !ok {
@@ -151,7 +159,7 @@ func (a *Authentication) RoleCheck(next http.Handler) http.Handler {
 			return
 		}
 		
-		ctx := context.WithValue(r.Context(), "claims", claims)
+		ctx := context.WithValue(r.Context(), ClaimsKey("claims"), claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

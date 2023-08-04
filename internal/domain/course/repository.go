@@ -1,8 +1,6 @@
 package course
 
 import (
-	"fmt"
-
 	"github.com/evermos/boilerplate-go/infras"
 	"github.com/evermos/boilerplate-go/shared/failure"
 	"github.com/evermos/boilerplate-go/shared/logger"
@@ -44,7 +42,7 @@ var (
 
 type CourseRepository interface {
 	Create(course Course) (err error)
-	Read(userID uuid.UUID) (courses []Course, err error)
+	ResolveCourseByUserId(userID uuid.UUID,  order string, orderBy string, page int, limit int) (courses []Course, err error)
 	// ExistsByID(id uuid.UUID) (exists bool, err error)
 	// ResolveByID(id uuid.UUID) (course Course, err error)
 	// ResolveItemsByCourseIDs(ids []uuid.UUID) (CourseItems []CourseItem, err error)
@@ -106,7 +104,6 @@ func (r *CourseRepositoryMySQL) txCreate(tx *sqlx.Tx, course Course) (err error)
 	}
 	defer stmt.Close()
 
-	fmt.Println(course.UserId)
 	_, err = stmt.Exec(course)
 	if err != nil {
 		logger.ErrorWithStack(err)
@@ -116,11 +113,26 @@ func (r *CourseRepositoryMySQL) txCreate(tx *sqlx.Tx, course Course) (err error)
 }
 
 
-func (r *CourseRepositoryMySQL) Read(userID uuid.UUID) (courses []Course, err error) {
+func (r *CourseRepositoryMySQL) ResolveCourseByUserId(userID uuid.UUID, order string, orderBy string, page int, limit int) (courses []Course, err error) {
+	query := "SELECT * FROM course WHERE userId = " + "'" +  userID.String() + "'" 
+	
+	if orderBy != "" {
+		query += " ORDER BY " + orderBy
+	}
+	if order != "" {
+		query += " " + order
+	}
+	var offset int
+	if page >= 0 {
+		offset = (page-1)*limit
+	}
+
+	query += " LIMIT ? OFFSET ? ;"
+
+
 	err = r.DB.Read.Select(
 		&courses,
-		"SELECT * FROM course WHERE userId = ?",
-		userID.String())
+		query, limit, offset)
 	if err != nil {
 		logger.ErrorWithStack(err)
 	}

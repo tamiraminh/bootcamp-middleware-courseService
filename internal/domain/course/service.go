@@ -8,7 +8,7 @@ import (
 
 type CourseService interface {
 	Create(requestFormat CourseRequestFormat, userID uuid.UUID) (course Course, err error)
-	Read(userID uuid.UUID) (courses []Course, err error)
+	ResolveCourseByUserId(userID uuid.UUID, order string, orderBy string, page int, limit int) (courses []Course, err error)
 }
 
 type CourseServiceImpl struct {
@@ -40,9 +40,9 @@ func (s *CourseServiceImpl) Create(requestFormat CourseRequestFormat, userID uui
 }
 
 
-func (s *CourseServiceImpl) Read(userID uuid.UUID) (courses []Course, err error) {
+func (s *CourseServiceImpl) ResolveCourseByUserId(userID uuid.UUID,  order string, orderBy string, page int, limit int) (courses []Course, err error) {
 
-	courses, err = s.CourseRepository.Read(userID)
+	courses, err = s.CourseRepository.ResolveCourseByUserId(userID,  order , orderBy, page, limit)
 	if err != nil {
 		return
 	}
