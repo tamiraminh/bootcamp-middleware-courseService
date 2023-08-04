@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/evermos/boilerplate-go/shared"
 	"github.com/evermos/boilerplate-go/shared/nuuid"
 	"github.com/gofrs/uuid"
 	"github.com/guregu/null"
@@ -30,6 +31,12 @@ func (c Course) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.ToResponseFormat())
 }
 
+func (c *Course) Validate() (err error) {
+	validator := shared.GetValidator()
+	return validator.Struct(c)
+}
+
+
 
 func (c Course) NewFromRequestFormat(req CourseRequestFormat, userID uuid.UUID) (newCourse Course, err error) {
 	courseId, _ := uuid.NewV4()
@@ -41,6 +48,8 @@ func (c Course) NewFromRequestFormat(req CourseRequestFormat, userID uuid.UUID) 
 		CreatedAt:   time.Now(),
 		CreatedBy:   userID,
 	}
+
+	err = newCourse.Validate()
 
 	return
 }
