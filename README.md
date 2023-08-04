@@ -30,3 +30,10 @@ To run this server, run this command in root terminal
 ```
 go run . 
 ```
+
+
+## Improvement After Huddle
+1. Add validator to course struct 
+2. Add pagination to Get Course 
+3. Fix naming in Get Course
+4. Auth Service url and path using Config not directly using viper 
