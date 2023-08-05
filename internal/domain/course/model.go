@@ -11,10 +11,10 @@ import (
 )
 
 type Course struct {
-	Id			uuid.UUID `db:"id"`
-	Title		string `db:"title"`
-	Content		string `db:"content"`
-	UserId		uuid.UUID `db:"userId"`
+	Id			uuid.UUID `db:"id" validate:"required"`
+	Title		string `db:"title" validate:"required"`
+	Content		string `db:"content" validate:"required"`
+	UserId		uuid.UUID `db:"userId" validate:"required"`
 	CreatedAt   time.Time   `db:"createdAt"`
 	CreatedBy   uuid.UUID   `db:"createdBy"`
 	UpdatedAt   null.Time   `db:"updatedAt"`
@@ -73,8 +73,8 @@ func (c Course) ToResponseFormat() CourseResponseFormat {
 }
 
 type CourseRequestFormat struct {
-	Title		string `json:"title"`
-	Content		string `json:"content"`
+	Title		string `json:"title" validate:"required"`
+	Content		string `json:"content" validate:"required"`
 }
 
 
